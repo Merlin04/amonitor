@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ReasonSettings">
+    <option name="formatColumnWidth" value="80" />
+    <option name="opamLocation" value="." />
+    <option name="switchName" value="$PROJECT_DIR$" />
+  </component>
+</project>

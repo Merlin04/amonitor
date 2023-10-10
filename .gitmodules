@@ -1,0 +1,3 @@
+[submodule "proto/arduino-cli"]
+	path = proto/arduino-cli
+	url = https://github.com/arduino/arduino-cli

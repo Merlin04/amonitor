@@ -1,0 +1,18 @@
+(library
+  (preprocess (pps ppx_deriving.std))
+  (name arduino_cli)
+  (libraries ocaml-protoc-plugin))
+
+(rule
+  (targets board.ml commands.ml common.ml compile.ml core.ml debug.ml lib.ml monitor.ml port.ml settings.ml upload.ml status.ml any.ml wrappers.ml)
+  (deps
+    (:protos (glob_files_rec ./arduino-cli/*.proto)))
+  (action
+    (run
+     protoc
+     "--proto_path=arduino-cli/rpc"
+     "--ocaml_out=annot=[@@deriving show { with_path = false }]:."
+     %{protos}
+     "google/protobuf/any.proto"
+     "google/protobuf/wrappers.proto"
+   )))
