@@ -1,4 +1,5 @@
 open Grpc_lwt
+open Lwt
 open Lwt.Syntax
 open Ocaml_protoc_plugin
 open Arduino_cli.Commands.Cc.Arduino.Cli.Commands.V1
@@ -20,42 +21,29 @@ let core_call conn rpc handler =
     ~handler:handler
     ()
 
-let call_create conn req =
-  let encode, decode = Service.make_client_functions ArduinoCoreService.create in
-  let enc = encode req |> Writer.contents in
-  core_call conn "Create" (Client.Rpc.unary enc ~f:(fun decoder ->
-    let+ decoder = decoder in
-    match decoder with
-      | Some decoder -> (
-        Reader.create decoder |> decode |> function
-          | Ok v -> v
-          | Error e ->
-            failwith (Printf.sprintf "Could not decode request: %s" (Result.show_error e)))
-      | None -> failwith "Failed to create instance"))
+type ('req, 'rep) reqrep = (module Ocaml_protoc_plugin.Service.Message with type t = 'req) *
+                        (module Ocaml_protoc_plugin.Service.Message with type t = 'rep)
 
-let call_init conn req =
-  let encode, decode = Service.make_client_functions ArduinoCoreService.init in
+let call_unary (type t_req) (type t_rep) (reqrep : (t_req, t_rep) reqrep) rpc ~conn ~req =
+  let encode, decode = Service.make_client_functions reqrep in
   let enc = encode req |> Writer.contents in
-  let* _stream = core_call conn "Init" (Client.Rpc.server_streaming enc ~f:(fun responses ->
-    let stream = Lwt_stream.map (fun str ->
-      Reader.create str |> decode |> function
-        | Ok v -> print_endline (InitResponse.show v); v
-        | Error e -> failwith (Printf.sprintf "Could not decode request: %s" (Result.show_error e))
-    ) responses in Lwt_stream.to_list stream
+  core_call conn rpc (Client.Rpc.unary enc ~f:(fun decoder ->
+    decoder >|= Option.get >|= Reader.create >|= decode >|= function
+      | Ok v -> v
+      | Error e -> failwith (Printf.sprintf "Could not decode response: %s" (Result.show_error e))
   ))
-  in
-  Lwt.return_unit
 
-let call_version conn =
-  let encode, decode = Service.make_client_functions ArduinoCoreService.version in
-  let enc = encode (VersionRequest.make ()) |> Writer.contents in
-  core_call conn "Version" (Client.Rpc.unary enc ~f:(fun decoder ->
-    let+ decoder = decoder in
-    match decoder with
-      | Some decoder -> (
-        Reader.create decoder |> decode |> function
-          | Ok v -> v
-          | Error e ->
-            failwith (Printf.sprintf "Could not decode request: %s" (Result.show_error e)))
-      | None -> failwith "Failed to get version"))
+let call_stream (type t_req) (type t_rep) (reqrep : (t_req, t_rep) reqrep) rpc ~conn ~req =
+  let encode, decode = Service.make_client_functions reqrep in
+  let enc = encode req |> Writer.contents in
+  core_call conn rpc (Client.Rpc.server_streaming enc ~f:(fun responses ->
+    Lwt_stream.map (fun r -> Reader.create r |> decode |> function
+      | Ok v -> v
+      | Error e -> failwith (Printf.sprintf "Could not decode response: %s" (Result.show_error e))
+    ) responses |> Lwt.return
+  ))
 
+let call_create = call_unary ArduinoCoreService.create "Create" ~req:(CreateRequest.make ())
+let call_init = call_stream ArduinoCoreService.init "Init"
+let call_version = call_unary ArduinoCoreService.version "Version" ~req:(VersionRequest.make ())
+let call_board_list = call_unary ArduinoCoreService.boardList "BoardList"
