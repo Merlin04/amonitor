@@ -11,14 +11,14 @@
 
 (maintainers "Merlin04")
 
-(license LICENSE)
+(license GPLv3)
 
 (documentation https://github.com/Merlin04/amonitor)
 
 (package
  (name amonitor)
- (synopsis "Improved Arduino serial monitor")
- (description "An improved Arduino serial monitor that connects to the core Arduino service and provides niceties not found in the arduino-cli built-in serial monitor.")
+ (synopsis "pretty arduino serial monitor")
+ (description "command-line serial monitor that works especially nicely with arduino boards")
  (depends ocaml dune (grpc-lwt (>= 0.1.0)) (h2-lwt-unix (>= 0.9.0)) (ocaml-protoc-plugin (>= 4.4.0)) ppx_deriving lambda-term)
  (tags
   (topics serial)))

@@ -2,4 +2,4 @@
  (preprocess (pps ppx_deriving.std))
  (public_name amonitor)
  (name main)
- (libraries amonitor grpc grpc-lwt ocaml-protoc-plugin lwt lwt.unix h2 h2-lwt-unix arduino_cli lambda-term))
+ (libraries grpc grpc-lwt ocaml-protoc-plugin lwt lwt.unix h2 h2-lwt-unix arduino_cli lambda-term))
